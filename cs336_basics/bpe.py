@@ -1,6 +1,9 @@
 import regex
 import os
 from collections import Counter
+from multiprocessing import Pool
+
+from pretokenization_example import find_chunk_boundaries
 
 
 def retrieve_text_from_file(input_path: str | os.PathLike) -> str:
@@ -83,17 +86,52 @@ def train_bpe(
     vocab, merges = merge_to_vocab_size(token_counts, vocab, vocab_size)
     return vocab, merges
 
-def test_bpe(
-    text: str,
+def process_chunk(args):
+    file_path, start, end, special_tokens, vocab, vocab_size = args
+    token_counts = Counter()
+    with open(file_path, "rb") as f:
+        f.seek(start)
+        chunk = f.read(end - start).decode(
+            "utf-8", errors="ignore"
+        )
+        split_chunks = split_on_special_tokens(chunk, special_tokens)
+        for chunk in split_chunks:
+            token_counts.update(pretokenize(chunk))
+        vocab, merges = merge_to_vocab_size(token_counts, vocab, vocab_size)
+    return token_counts, vocab, merges
+
+def train_bpe_with_multiprocessing(
+    input_path: str | os.PathLike,
     vocab_size: int,
-    special_tokens: list[str]
+    special_tokens: list[str],
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
-    documents = split_on_special_tokens(text, special_tokens)
     num_special_tokens = len(special_tokens)
     vocab = {i: special_tokens[i].encode("utf-8") for i in range(num_special_tokens)}
     vocab.update({i + num_special_tokens: bytes([i]) for i in range(256)})
-    token_counts = Counter()
-    for document in documents:
-        token_counts.update(pretokenize(document))
-    vocab, merges = merge_to_vocab_size(token_counts, vocab, vocab_size)
+
+    with open(..., "rb") as f:
+        num_processes = 4
+        boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
+
+    tasks = [
+        (input_path, start, end, special_tokens, vocab, vocab_size)
+        for start, end in zip(
+            boundaries[:-1], boundaries[1:]
+        )
+    ]
+
+    with Pool(num_processes) as pool:
+        token_counts, vocab, merges = pool.map(process_chunk, tasks)
+    
+    
     return vocab, merges
+
+import time
+start = time.time()
+vocab, merges = train_bpe_with_multiprocessing("data/TinyStoriesV2-GPT4-valid.txt", 10_000, ["<|endoftext|>"])
+end = time.time() - start
+print(vocab)
+print()
+print(merges)
+print()
+print(end)
