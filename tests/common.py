@@ -34,18 +34,18 @@ def gpt2_bytes_to_unicode() -> dict[int, str]:
     This function can simplify the BPE implementation and makes it slightly easier to
     manually inspect the generated merges after they're serialized to a file.
     """
-    # These 188 integers can used as-is, since they are not whitespace or control characters.
+    # These 188 integers can be used as-is, since they are not whitespace or control characters.
     # See https://www.ssec.wisc.edu/~tomw/java/unicode.html.
     bs = list(range(ord("!"), ord("~") + 1)) + list(range(ord("¡"), ord("¬") + 1)) + list(range(ord("®"), ord("ÿ") + 1))
     cs = bs[:]
     # now get the representations of the other 68 integers that do need shifting
     # each will get mapped chr(256 + n), where n will grow from 0...67 in the loop
-    # Get printable representations of the remaining integers 68 integers.
+    # Get printable representations of the remaining 68 integers.
     n = 0
     for b in range(2**8):
         if b not in bs:
             # If this integer isn't in our list of visually-representable
-            # charcters, then map it to the next nice character (offset by 256)
+            # characters, then map it to the next nice character (offset by 256)
             bs.append(b)
             cs.append(2**8 + n)
             n += 1
