@@ -113,8 +113,9 @@ def train_bpe_with_multiprocessing(
     vocab = {i: special_tokens[i].encode("utf-8") for i in range(num_special_tokens)}
     vocab.update({i + num_special_tokens: bytes([i]) for i in range(256)})
 
+    cpu_core_count = os.cpu_count()
     with open(input_path, "rb") as f:
-        boundaries = find_chunk_boundaries(f, 100, special_tokens[0].encode("utf-8"))
+        boundaries = find_chunk_boundaries(f, cpu_core_count * 10, special_tokens[0].encode("utf-8"))
 
     tasks = [
         (input_path, start, end, special_tokens)
@@ -123,7 +124,7 @@ def train_bpe_with_multiprocessing(
         )
     ]
 
-    with Pool(processes=os.cpu_count()) as pool:
+    with Pool(processes=cpu_core_count) as pool:
         results = pool.map(process_chunk, tasks)
 
     token_counts = Counter()
