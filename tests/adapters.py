@@ -9,7 +9,7 @@ import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
-from cs336_basics.bpe import train_bpe
+from cs336_basics.bpe import train_bpe_with_multiprocessing
 
 
 def run_linear(
@@ -591,4 +591,4 @@ def run_train_bpe(
                 representing that <token1> was merged with <token2>.
                 Merges are ordered by order of creation.
     """
-    return train_bpe(input_path, vocab_size, special_tokens)
+    return train_bpe_with_multiprocessing(input_path, vocab_size, special_tokens)
