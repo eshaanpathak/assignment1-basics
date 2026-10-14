@@ -3,7 +3,8 @@ from collections import Counter
 from multiprocessing import Pool
 
 import regex
-from pretokenization_example import find_chunk_boundaries
+
+from cs336_basics.pretokenization_example import find_chunk_boundaries
 
 
 def retrieve_text_from_file(input_path: str | os.PathLike) -> str:
@@ -20,7 +21,7 @@ def split_on_special_tokens(text: str, special_tokens: list[str]) -> list[str]:
         escaped_special_token = regex.escape(special_token)
         escaped_special_tokens.append(escaped_special_token)
     special_tokens_pat = "|".join(escaped_special_tokens)
-    documents  = regex.split(special_tokens_pat, text)
+    documents = regex.split(special_tokens_pat, text)
     return documents
 
 def pretokenize(text: str) -> dict[tuple[bytes, ...], int]:
