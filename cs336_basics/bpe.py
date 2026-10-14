@@ -1,5 +1,5 @@
 import os
-from collections import Counter
+from collections import Counter, defaultdict
 from multiprocessing import Pool
 
 import regex
@@ -34,46 +34,79 @@ def pretokenize(text: str) -> dict[tuple[bytes, ...], int]:
     return token_counts
 
 def get_merge_candidate(
-    token_counts: dict[tuple[bytes, ...], int]
-) -> tuple[bytes, bytes]:
-    # pair_counts is recreated each time we call get_merge_candidate() which is inefficient
-    pair_counts = Counter()
-    for token, counts in token_counts.items():
-        for i in range(len(token) - 1):
-            window = token[i : i + 2]
-            pair_counts[window] += counts
-    candidate = max(pair_counts.items(), key=lambda x: (x[1], x[0]))[0]
-    return candidate
+    pair_counts: dict[tuple[bytes, ...], int]
+) -> tuple[bytes, bytes] | None:
+    if not pair_counts:
+        return
+    return max(pair_counts.items(), key=lambda x: (x[1], x[0]))[0]
 
 def merge(
     token_counts: dict[tuple[bytes, ...], int],
-    candidate: tuple[bytes, ...]
+    candidate: tuple[bytes, ...],
+    pair_counts: dict[tuple[bytes, ...], int],
+    pair_tokens: dict[tuple[bytes, ...], list[set]],
 ) -> dict[tuple[bytes, ...], int]:
-    # new_token_counts is recreated each time we call merge() which is inefficient
     new_token_counts = Counter()
-    for token, counts in token_counts.items():
-        new_token_bytes = []
+    pair_deltas = Counter()
+    affected_tokens = pair_tokens[candidate].copy()
+
+    for token in affected_tokens:
+        counts = token_counts.pop(token)
+
+        # remove the old token's pair contributions
+        for pair, freq in Counter(zip(token, token[1:])).items():
+            pair_deltas[pair] -= freq * counts
+            pair_tokens[pair].discard(token)
+
+        # merge the selected pair
         i = 0
+        new_token = []
         while i < len(token):
             if i + 1 < len(token) and (token[i], token[i + 1]) == candidate:
-                new_token_bytes.append(b"".join((token[i], token[i + 1])))
+                new_token.append(b"".join((token[i], token[i + 1])))
                 i += 2
             else:
-                new_token_bytes.append(token[i])
+                new_token.append(token[i])
                 i += 1
-        new_token = tuple(new_token_bytes)
-        new_token_counts[new_token] += counts
-    return new_token_counts
+
+        new_token_counts[tuple(new_token)] += counts
+
+    # add the new token sequences and their pair contributions
+    for token, counts in new_token_counts.items():
+        token_counts[token] += counts
+
+        for pair, freq in Counter(zip(token, token[1:])).items():
+            pair_deltas[pair] += freq * counts
+            pair_tokens[pair].add(token)
+
+    # apply only the pair-count changes
+    for pair, delta in pair_deltas.items():
+        pair_counts[pair] += delta
+
+        if pair_counts[pair] <= 0:
+            pair_counts.pop(pair, None)
+
+    return token_counts
 
 def merge_to_vocab_size(
     token_counts: dict[tuple[bytes, ...], int],
     vocab: dict[int, bytes],
     vocab_size: int
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
+    pair_counts = Counter()
+    pair_tokens = defaultdict(set)
+
+    for token, counts in token_counts.items():
+        for pair in zip(token, token[1:]):
+            pair_counts[pair] += counts
+            pair_tokens[pair].add(token)
+
     merges = []
     while len(vocab) < vocab_size:
-        merge_candidate = get_merge_candidate(token_counts)
-        token_counts = merge(token_counts, merge_candidate)
+        merge_candidate = get_merge_candidate(pair_counts)
+        if not merge_candidate:
+            break
+        token_counts = merge(token_counts, merge_candidate, pair_counts, pair_tokens)
         vocab[len(vocab)] = b"".join(merge_candidate)
         merges.append(merge_candidate)
     return vocab, merges
@@ -138,5 +171,4 @@ def train_bpe_with_multiprocessing(
 
 if __name__ == "__main__":
     vocab, merges = train_bpe("data/TinyStoriesV2-GPT4-valid.txt", 10_000, ["<|endoftext|>"])
-
     vocab, merges = train_bpe_with_multiprocessing("data/TinyStoriesV2-GPT4-valid.txt", 10_000, ["<|endoftext|>"])

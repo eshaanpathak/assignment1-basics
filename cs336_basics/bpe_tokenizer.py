@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from collections.abc import Iterable, Iterator
 
 import regex
@@ -72,13 +73,19 @@ class BPETokenizer:
     def merge(
         self,
         all_pretokenized_bytes: list[tuple[bytes, ...]],
-        candidate: tuple[bytes, ...]
+        candidate: tuple[bytes, ...],
+        pair_tokens: dict[tuple[bytes, bytes], set[int]],
     ) -> list[tuple[bytes, ...]]:
-        # new_all_pretokenized_bytes is recreated each time we call merge() which is inefficient
-        new_all_pretokenized_bytes = []
-        for token in all_pretokenized_bytes:
-            new_token_bytes = []
+        affected_indices = pair_tokens.get(candidate, set()).copy()
+
+        for index in affected_indices:
+            token = all_pretokenized_bytes[index]
+
+            for pair in zip(token, token[1:]):
+                pair_tokens[pair].discard(index)
+
             i = 0
+            new_token_bytes = []
             while i < len(token):
                 if i + 1 < len(token) and (token[i], token[i + 1]) == candidate:
                     new_token_bytes.append(b"".join((token[i], token[i + 1])))
@@ -86,20 +93,38 @@ class BPETokenizer:
                 else:
                     new_token_bytes.append(token[i])
                     i += 1
+
             new_token = tuple(new_token_bytes)
-            new_all_pretokenized_bytes.append(new_token)
-        return new_all_pretokenized_bytes
+            all_pretokenized_bytes[index] = new_token
+
+            for pair in zip(new_token, new_token[1:]):
+                pair_tokens[pair].add(index)
+
+        return all_pretokenized_bytes
 
     def encode(self, text: str) -> list[int]:
         splitted_text = self.split_on_special_tokens(text)
         all_pretokenized_bytes = self.pretokenize(splitted_text)
+
+        pair_tokens = defaultdict(set)
+
+        for index, token in enumerate(all_pretokenized_bytes):
+            for pair in zip(token, token[1:]):
+                pair_tokens[pair].add(index)
+
         for candidate in self.merges:
-            all_pretokenized_bytes = self.merge(all_pretokenized_bytes, candidate)
+            all_pretokenized_bytes = self.merge(
+                all_pretokenized_bytes,
+                candidate,
+                pair_tokens,
+            )
+
         encoded_ids = []
         for tuple_bytes in all_pretokenized_bytes:
             for byte in tuple_bytes:
                 byte_id = self.bytes_to_ids[byte]
                 encoded_ids.append(byte_id)
+
         return encoded_ids
 
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
@@ -153,4 +178,4 @@ if __name__ == "__main__":
     from tests.test_tokenizer import MERGES_PATH, VOCAB_PATH
 
     bpe_tokenizer = BPETokenizer.from_files(VOCAB_PATH, MERGES_PATH, special_tokens=["<|endoftext|>"])
-    print(bpe_tokenizer.encode("hellooo i am <|endoftext|> hungry"))
+    print(bpe_tokenizer.encode("hellooo how are <|endoftext|> you?"))
