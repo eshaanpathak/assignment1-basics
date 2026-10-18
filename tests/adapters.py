@@ -11,6 +11,7 @@ from torch import Tensor
 
 from cs336_basics.bpe import train_bpe_with_multiprocessing
 from cs336_basics.bpe_tokenizer import BPETokenizer
+from cs336_basics.linear import Linear
 
 
 def run_linear(
@@ -31,8 +32,11 @@ def run_linear(
     Returns:
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
-
-    raise NotImplementedError
+    linear_layer = Linear(d_in, d_out)
+    state_dict = linear_layer.state_dict()
+    state_dict["w"] = weights
+    linear_layer.load_state_dict(state_dict)
+    return linear_layer(in_features)
 
 
 def run_embedding(
@@ -53,7 +57,6 @@ def run_embedding(
     Returns:
         Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
     """
-
     raise NotImplementedError
 
 
