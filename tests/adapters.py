@@ -15,6 +15,7 @@ from cs336_basics.embedding import Embedding
 from cs336_basics.linear import Linear
 from cs336_basics.rmsnorm import RMSNorm
 from cs336_basics.rope import RotaryPositionEmbedding
+from cs336_basics.softmax import softmax
 from cs336_basics.swiglu import SwiGLU
 
 
@@ -453,7 +454,7 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
         softmax normalizing the specified `dim`.
     """
-    raise NotImplementedError
+    return softmax(in_features, dim)
 
 
 def run_cross_entropy(
