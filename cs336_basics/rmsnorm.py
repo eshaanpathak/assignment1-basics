@@ -20,7 +20,7 @@ class RMSNorm(nn.Module):
         # upcast to prevent overflow
         in_dtype = x.dtype
         x = x.to(torch.float32)
-        # # make sure gain is same precision type as x
+        # make sure gain is same precision type as x
         gain = self.gain.to(torch.float32)
         # we sum across the last dim of d_model size.
         # we keep dim so the result has consistent dim of (..., d_model)

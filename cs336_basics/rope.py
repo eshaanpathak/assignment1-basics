@@ -27,20 +27,24 @@ class RotaryPositionEmbedding(nn.Module):
         x: torch.Tensor,
         token_positions: torch.Tensor
     ) -> torch.Tensor:
-        x_dtype = x.dtype
-        cos_positions = self.cos_angles[token_positions]
-        sin_positions = self.sin_angles[token_positions]
+        cos_thetas = self.cos_angles[token_positions]
+        sin_thetas = self.sin_angles[token_positions]
 
-        first_values = x[..., ::2]
-        second_values = x[..., 1::2]
+        x_even = x[..., ::2]
+        x_odd = x[..., 1::2]
 
-        first_row = first_values * cos_positions - second_values * sin_positions
-        second_row = second_values * cos_positions + first_values * sin_positions
+        num_dim_insert = x_even.ndim - cos_thetas.ndim
+        for _ in range(num_dim_insert):
+            cos_thetas = cos_thetas.unsqueeze(-3)
+            sin_thetas = sin_thetas.unsqueeze(-3)
 
-        stacked_rows = torch.stack((first_row, second_row), dim=-1) # (..., d_k/2, 2)
-        roped_x = torch.flatten(stacked_rows, start_dim=-2, end_dim=-1) # (..., d_k)
+        rot_even = x_even * cos_thetas - x_odd * sin_thetas
+        rot_odd = x_odd * cos_thetas + x_even * sin_thetas
 
-        return roped_x.to(x_dtype)
+        stacked_rots = torch.stack((rot_even, rot_odd), dim=-1) # (..., d_k/2, 2)
+        roped_x = torch.flatten(stacked_rots, start_dim=-2, end_dim=-1) # (..., d_k)
+
+        return roped_x.to(x.dtype)
 
 
 if __name__ == "__main__":
@@ -51,4 +55,6 @@ if __name__ == "__main__":
         [1.0, 0.0, 1.0, 0.0],
     ])
     token_positions = torch.tensor([0, 1, 2], dtype=torch.int32)
-    print(rope_layer(x, token_positions))
+    print(f"cos_angles: {rope_layer.cos_angles}")
+    print(f"sin_angles: {rope_layer.sin_angles}")
+    print(f"roped_x: {rope_layer(x, token_positions)}")
