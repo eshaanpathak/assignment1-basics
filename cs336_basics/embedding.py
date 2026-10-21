@@ -11,10 +11,11 @@ class Embedding(nn.Module):
         dtype: torch.dtype | None = None
     ):
         super().__init__()
+
         self.embeddings = nn.Parameter(
             torch.empty(size=(num_embeddings, embedding_dim), dtype=dtype, device=device)
         )
-        nn.init.trunc_normal_(self.embeddings, a=-3, b=-3)
+        nn.init.trunc_normal_(self.embeddings, a=-3, b=3)
     
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
         return self.embeddings[token_ids]

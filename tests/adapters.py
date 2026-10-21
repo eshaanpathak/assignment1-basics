@@ -14,6 +14,7 @@ from cs336_basics.bpe_tokenizer import BPETokenizer
 from cs336_basics.embedding import Embedding
 from cs336_basics.linear import Linear
 from cs336_basics.rmsnorm import RMSNorm
+from cs336_basics.rope import RotaryPositionEmbedding
 from cs336_basics.swiglu import SwiGLU
 
 
@@ -216,7 +217,8 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    rope_layer = RotaryPositionEmbedding(theta, d_k, max_seq_len)
+    return rope_layer(in_query_or_key, token_positions)
 
 
 def run_transformer_block(

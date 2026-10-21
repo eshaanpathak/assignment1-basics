@@ -12,6 +12,7 @@ class Linear(nn.Module):
         dtype: torch.dtype | None = None
     ):
         super().__init__()
+
         self.weight = nn.Parameter(
             torch.empty(size=(out_features, in_features), dtype=dtype, device=device)
         )
@@ -19,8 +20,8 @@ class Linear(nn.Module):
         torch.nn.init.trunc_normal_(self.weight, std=std, a=-3*std, b=3*std)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        #return torch.matmul(x, self.weight.T)
-        return einsum(self.weight, x, "d_out d_in, ... d_in -> ... d_out")
+        #return einsum(self.weight, x, "d_out d_in, ... d_in -> ... d_out")
+        return torch.matmul(x, self.weight.T)
 
 
 if __name__ == "__main__":

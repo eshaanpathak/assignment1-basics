@@ -13,9 +13,11 @@ class SwiGLU(nn.Module):
         dtype: torch.dtype | None = None
     ):
         super().__init__()
+
         if d_ff is None:
             d_ff = (8 / 3) * d_model
             d_ff = max(round(d_ff / 64), 1) * 64
+
         self.w1 = Linear(d_model, d_ff, device, dtype)
         self.w2 = Linear(d_ff, d_model, device, dtype)
         self.w3 = Linear(d_model, d_ff, device, dtype)
