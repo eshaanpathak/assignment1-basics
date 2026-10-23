@@ -9,15 +9,10 @@ import torch
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
-from cs336_basics.bpe import train_bpe_with_multiprocessing
-from cs336_basics.bpe_tokenizer import BPETokenizer
-from cs336_basics.embedding import Embedding
-from cs336_basics.linear import Linear
-from cs336_basics.rmsnorm import RMSNorm
-from cs336_basics.rope import RotaryPositionEmbedding
-from cs336_basics.sdp_attention import scaled_dot_product_attention
-from cs336_basics.softmax import softmax
-from cs336_basics.swiglu import SwiGLU
+from cs336_basics.model.attention import scaled_dot_product_attention, softmax
+from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPositionEmbedding, SwiGLU
+from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
+from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
 
 
 def run_linear(

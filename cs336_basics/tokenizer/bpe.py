@@ -4,7 +4,7 @@ from multiprocessing import Pool
 
 import regex
 
-from cs336_basics.pretokenization_example import find_chunk_boundaries
+from cs336_basics.tokenizer.pretokenization_example import find_chunk_boundaries
 
 
 def retrieve_text_from_file(input_path: str | os.PathLike) -> str:

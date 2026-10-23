@@ -33,6 +33,8 @@ class RotaryPositionEmbedding(nn.Module):
         x_even = x[..., ::2]
         x_odd = x[..., 1::2]
 
+        # x_even and x_odd:          (batch, heads, seq, d_k/2)
+        # cos_thetas and sin_thetas: (batch,        seq, d_k/2)
         num_dim_insert = x_even.ndim - cos_thetas.ndim
         for _ in range(num_dim_insert):
             cos_thetas = cos_thetas.unsqueeze(-3)
