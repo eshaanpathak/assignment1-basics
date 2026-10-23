@@ -50,6 +50,7 @@ class MultiHeadSelfAttention(nn.Module):
         self.v_proj = Linear(self.d_model, self.d_model, device=device, dtype=dtype)
         self.o_proj = Linear(self.d_model, self.d_model, device=device, dtype=dtype)
 
+        self.rope = None
         if theta is not None and max_seq_len is not None:
             self.rope = RotaryPositionEmbedding(
                 theta, self.d_model // self.num_heads, max_seq_len, device
@@ -69,12 +70,12 @@ class MultiHeadSelfAttention(nn.Module):
         # q, k, and v are (..., seq_len, d_model)
         # we want (..., num_heads, seq_len, d_k)
         # we infer d_k with -1
-        new_size = x_shape_until_last + (self.num_heads, -1)
+        new_size = (*x_shape_until_last, self.num_heads, -1)
         q = q.view(new_size).transpose(-3, -2)
         k = k.view(new_size).transpose(-3, -2)
         v = v.view(new_size).transpose(-3, -2)
 
-        if token_positions is not None:
+        if self.rope is not None and token_positions is not None:
             q = self.rope(q, token_positions)
             k = self.rope(k, token_positions)
 
@@ -83,7 +84,7 @@ class MultiHeadSelfAttention(nn.Module):
 
         # (..., num_heads, seq_len, d_k)
         multihead = scaled_dot_product_attention(q, k, v, mask=mask)
-        multihead = multihead.transpose(-3, -2).reshape(x_shape_until_last + (self.d_model,))
+        multihead = multihead.transpose(-3, -2).reshape((*x_shape_until_last, self.d_model))
 
         return self.o_proj(multihead)
 
