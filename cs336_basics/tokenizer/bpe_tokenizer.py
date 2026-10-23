@@ -135,7 +135,8 @@ class BPETokenizer:
     def decode(self, ids: list[int]) -> str:
         decoded_tokens = []
         for bpe_id in ids:
-            assert bpe_id in self.vocab, f"{bpe_id} is not in vocab"
+            if bpe_id not in self.vocab:
+                raise ValueError(f"{bpe_id} is not in vocab")
             token = self.vocab[bpe_id]
             decoded_tokens.append(token)
         return b"".join(decoded_tokens).decode("utf-8", errors="replace")
