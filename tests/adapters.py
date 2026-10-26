@@ -11,7 +11,7 @@ from torch import Tensor
 
 from cs336_basics.model.attention import MultiHeadSelfAttention, scaled_dot_product_attention, softmax
 from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPositionEmbedding, SwiGLU
-from cs336_basics.model.transformer import TransformerBlock
+from cs336_basics.model.transformer import Transformer, TransformerBlock
 from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
 from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
 
@@ -316,6 +316,8 @@ def run_transformer_block(
     transformer_block = TransformerBlock(d_model, num_heads, d_ff, theta, max_seq_len)
     transformer_block.load_state_dict(weights)
 
+    if in_features.dim() == 1:
+        in_features = in_features.unsqueeze(0)
     batch_size, sequence_length = in_features.shape[0], in_features.shape[1]
     seq_len_range = torch.arange(sequence_length, dtype=torch.int64, device=in_features.device)
     token_positions = seq_len_range.unsqueeze(0).expand(batch_size, -1)
@@ -402,7 +404,23 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    layer_weights = {}
+    for i in range(num_layers):
+        layer_weights[f"layers.{i}.ln1.gain"] = weights.pop(f"layers.{i}.ln1.weight")
+        layer_weights[f"layers.{i}.attn.o_proj.weight"] = weights.pop(f"layers.{i}.attn.output_proj.weight")
+        layer_weights[f"layers.{i}.ln2.gain"] = weights.pop(f"layers.{i}.ln2.weight")
+
+    weights.update(
+        {
+            "token_embeddings.embeddings": weights.pop("token_embeddings.weight"),
+            "ln_final.gain": weights.pop("ln_final.weight")
+        }
+    )
+    weights.update(layer_weights)
+
+    transformer = Transformer(d_model, num_heads, d_ff, rope_theta, vocab_size, context_length, num_layers)
+    transformer.load_state_dict(weights)
+    return transformer(in_indices)
 
 
 def run_rmsnorm(
