@@ -11,6 +11,7 @@ from torch import Tensor
 
 from cs336_basics.model.attention import MultiHeadSelfAttention, scaled_dot_product_attention, softmax
 from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPositionEmbedding, SwiGLU
+from cs336_basics.model.transformer import TransformerBlock
 from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
 from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
 
@@ -304,7 +305,22 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
+    weights.update(
+        {
+            "ln1.gain": weights.pop("ln1.weight"),
+            "attn.o_proj.weight": weights.pop("attn.output_proj.weight"),
+            "ln2.gain": weights.pop("ln2.weight")
+        }
+    )
+
+    transformer_block = TransformerBlock(d_model, num_heads, d_ff, theta, max_seq_len)
+    transformer_block.load_state_dict(weights)
+
+    batch_size, sequence_length = in_features.shape[0], in_features.shape[1]
+    seq_len_range = torch.arange(sequence_length, dtype=torch.int64, device=in_features.device)
+    token_positions = seq_len_range.unsqueeze(0).expand(batch_size, -1)
+
+    return transformer_block(in_features, token_positions)
 
 
 def run_transformer_lm(
