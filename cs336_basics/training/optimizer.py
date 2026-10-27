@@ -35,6 +35,7 @@ def clip_gradients(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float)
 
     return parameters
 
+
 class SGD(torch.optim.Optimizer):
     def __init__(self, params, lr=1e-3):
         if lr < 0:

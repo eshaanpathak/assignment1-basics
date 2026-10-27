@@ -14,7 +14,7 @@ from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPosition
 from cs336_basics.model.transformer import Transformer, TransformerBlock
 from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
 from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
-from cs336_basics.training.training import AdamW, clip_gradients, cosine_lr_schedule, cross_entropy
+from cs336_basics.training.optimizer import AdamW, clip_gradients, cosine_lr_schedule, cross_entropy
 
 
 def run_linear(
