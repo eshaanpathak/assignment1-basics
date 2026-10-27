@@ -1,5 +1,5 @@
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 import torch
 
@@ -12,6 +12,28 @@ def cross_entropy(inputs: torch.Tensor, targets: torch.Tensor):
     indexed_inputs = torch.gather(inputs, -1, targets.unsqueeze(-1)).squeeze(-1)
     return torch.mean(log_sum_exp - indexed_inputs)
 
+def cosine_lr_schedule(t: int, lr_max: float, lr_min: float, warmup_iters: int, cosine_cycle_iters: int):
+    if t < warmup_iters:
+        return (t / warmup_iters) * lr_max
+    if t <= cosine_cycle_iters:
+        return lr_min + 0.5 * (1 + math.cos(((t - warmup_iters) / (cosine_cycle_iters - warmup_iters)) * math.pi)) * (lr_max - lr_min)
+    return lr_min
+
+def clip_gradients(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float):
+    parameters = list(parameters)
+
+    total_norm = 0
+    for p in parameters:
+        if p.grad is not None:
+            total_norm += torch.linalg.vector_norm(p.grad.data) ** 2
+    total_norm = total_norm ** 0.5
+    
+    if total_norm > max_l2_norm:
+        for p in parameters:
+            if p.grad is not None:
+                p.grad.data *= max_l2_norm / (total_norm + 10e-6)
+
+    return parameters
 
 class SGD(torch.optim.Optimizer):
     def __init__(self, params, lr=1e-3):
