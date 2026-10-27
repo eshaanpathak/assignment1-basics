@@ -14,7 +14,7 @@ from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPosition
 from cs336_basics.model.transformer import Transformer, TransformerBlock
 from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
 from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
-from cs336_basics.training.optimizer import cross_entropy
+from cs336_basics.training.training import AdamW, cross_entropy
 
 
 def run_linear(
@@ -538,7 +538,7 @@ def get_adamw_cls() -> Any:
     """
     Returns a torch.optim.Optimizer that implements AdamW.
     """
-    raise NotImplementedError
+    return AdamW
 
 
 def run_get_lr_cosine_schedule(
