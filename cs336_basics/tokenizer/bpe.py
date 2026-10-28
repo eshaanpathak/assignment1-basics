@@ -145,12 +145,15 @@ def train_bpe_with_multiprocessing(
     input_path: str | os.PathLike,
     vocab_size: int,
     special_tokens: list[str],
+    cpu_core_count: int | None = None
 ) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
     num_special_tokens = len(special_tokens)
     vocab = {i: special_tokens[i].encode("utf-8") for i in range(num_special_tokens)}
     vocab.update({i + num_special_tokens: bytes([i]) for i in range(256)})
 
-    cpu_core_count = os.cpu_count()
+    if cpu_core_count is None:
+        cpu_core_count = os.cpu_count()
+
     with open(input_path, "rb") as f:
         boundaries = find_chunk_boundaries(f, cpu_core_count * 10, special_tokens[0].encode("utf-8"))
 
@@ -179,10 +182,11 @@ def train_and_save_bpe(
     acronym: str,
     vocab_size: int,
     special_tokens: list[str],
+    cpu_core_count: int | None = None,
     output_dir: str = "data/",
 ):
     t0 = time.perf_counter()
-    vocab, merges = train_bpe_with_multiprocessing(input_path, vocab_size, special_tokens)
+    vocab, merges = train_bpe_with_multiprocessing(input_path, vocab_size, special_tokens, cpu_core_count)
     t1 = time.perf_counter()
 
     os.makedirs(output_dir, exist_ok=True)
