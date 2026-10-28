@@ -1,6 +1,7 @@
 import os
 from typing import IO, BinaryIO
 
+import numpy.typing as npt
 import torch
 
 
@@ -11,6 +12,17 @@ def cross_entropy(inputs: torch.Tensor, targets: torch.Tensor):
     # we squeeze to ensure log_sum_exp.shape == indexed_inputs.shape
     indexed_inputs = torch.gather(inputs, -1, targets.unsqueeze(-1)).squeeze(-1)
     return torch.mean(log_sum_exp - indexed_inputs)
+
+def get_batch(
+    dataset: npt.NDArray, batch_size: int, context_length: int, device: str
+):
+    start_indices = torch.randint(0, dataset.shape[0] - context_length, (batch_size,))
+    offsets = torch.arange(context_length)
+    batch_indices = start_indices.unsqueeze(-1) + offsets # broadcasting, same as start_indices[:, None]
+    target_indices = batch_indices + 1
+    batch_data = torch.from_numpy(dataset[batch_indices.numpy()]).to(device=device, dtype=torch.int64)
+    target_data = torch.from_numpy(dataset[target_indices.numpy()]).to(device=device, dtype=torch.int64)
+    return batch_data, target_data
 
 def save_checkpoint(
     model: torch.nn.Module,
