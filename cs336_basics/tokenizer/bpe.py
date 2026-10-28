@@ -1,10 +1,13 @@
+import json
 import os
+import time
 from collections import Counter, defaultdict
 from multiprocessing import Pool
 
 import regex
 
 from cs336_basics.tokenizer.pretokenization_example import find_chunk_boundaries
+from tests.common import gpt2_bytes_to_unicode
 
 
 def retrieve_text_from_file(input_path: str | os.PathLike) -> str:
@@ -168,7 +171,43 @@ def train_bpe_with_multiprocessing(
     vocab, merges = merge_to_vocab_size(token_counts, vocab, vocab_size)
     return vocab, merges
 
+def bytes_to_str(b: bytes, byte_decoder: dict[int, str]) -> str:
+    return "".join(byte_decoder[x] for x in b)
+
+def train_and_save_bpe(
+    input_path: str | os.PathLike,
+    acronym: str,
+    vocab_size: int,
+    special_tokens: list[str],
+    output_dir: str = "data/",
+):
+    t0 = time.perf_counter()
+    vocab, merges = train_bpe_with_multiprocessing(input_path, vocab_size, special_tokens)
+    t1 = time.perf_counter()
+
+    os.makedirs(output_dir, exist_ok=True)
+    gpt2_byte_decoder = gpt2_bytes_to_unicode()
+
+    vocab_path = os.path.join(output_dir, f"{acronym}_bpe_vocab_{vocab_size}.json")
+    serializable_vocab = {bytes_to_str(tok, gpt2_byte_decoder): idx for idx, tok in vocab.items()}
+    with open(vocab_path, "w") as f:
+        json.dump(serializable_vocab, f, ensure_ascii=False)
+
+    merges_path = os.path.join(output_dir, f"{acronym}_bpe_merges_{vocab_size}.txt")
+    with open(merges_path, "w", encoding="utf-8") as f:
+        merge_writes = []
+        for left, right in merges:
+            merge_str = f"{bytes_to_str(left, gpt2_byte_decoder)} {bytes_to_str(right, gpt2_byte_decoder)}\n"
+            merge_writes.append(merge_str)
+        f.writelines(merge_writes)
+
+    longest_id, longest_bytes = max(vocab.items(), key=lambda x: len(x[1]))
+    longest_str = longest_bytes.decode("utf-8", errors="replace")
+
+    print(f"{input_path} Duration: {t1 - t0} seconds")
+    print(f"{input_path} Longest Token | Decoded: {longest_str!r} | ID: {longest_id} | Bytes: {len(longest_bytes)}\n")
+
 
 if __name__ == "__main__":
-    vocab, merges = train_bpe("data/TinyStoriesV2-GPT4-valid.txt", 10_000, ["<|endoftext|>"])
-    vocab, merges = train_bpe_with_multiprocessing("data/TinyStoriesV2-GPT4-valid.txt", 10_000, ["<|endoftext|>"])
+    train_and_save_bpe("data/TinyStoriesV2-GPT4-train.txt", "ts", 10_000, ["<|endoftext|>"])
+    # train_and_save_bpe("data/owt_train.txt", "owt", 32_000, ["<|endoftext|>"])
