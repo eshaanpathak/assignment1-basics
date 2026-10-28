@@ -14,7 +14,8 @@ from cs336_basics.model.layers import Embedding, Linear, RMSNorm, RotaryPosition
 from cs336_basics.model.transformer import Transformer, TransformerBlock
 from cs336_basics.tokenizer.bpe import train_bpe_with_multiprocessing
 from cs336_basics.tokenizer.bpe_tokenizer import BPETokenizer
-from cs336_basics.training.optimizer import AdamW, clip_gradients, cosine_lr_schedule, cross_entropy
+from cs336_basics.training.optimizer import AdamW, clip_gradients, cosine_lr_schedule
+from cs336_basics.training.utils import cross_entropy, load_checkpoint, save_checkpoint
 
 
 def run_linear(
@@ -585,7 +586,7 @@ def run_save_checkpoint(
             we've completed.
         out (str | os.PathLike | BinaryIO | IO[bytes]): Path or file-like object to serialize the model, optimizer, and iteration to.
     """
-    raise NotImplementedError
+    return save_checkpoint(model, optimizer, iteration, out)
 
 
 def run_load_checkpoint(
@@ -606,7 +607,7 @@ def run_load_checkpoint(
     Returns:
         int: the previously-serialized number of iterations.
     """
-    raise NotImplementedError
+    return load_checkpoint(src, model, optimizer)
 
 
 def get_tokenizer(
