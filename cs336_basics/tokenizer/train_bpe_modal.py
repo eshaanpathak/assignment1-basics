@@ -1,4 +1,5 @@
-"""Modal launcher for BPE training. Infra only: the training logic lives in cs336_basics.tokenizer.bpe.
+"""
+Modal launcher for BPE training. Infra only: the training logic lives in cs336_basics.tokenizer.bpe.
 
 Volume layout (one volume, one top-level directory per assignment):
     /assignment1/data/   inputs (raw text) and outputs (vocab json, merges txt)
@@ -13,8 +14,8 @@ Upload the data once per file (OWT is ~12GB, so that one takes a while):
 
 Run (all three flags are required; --input-name is relative to /assignment1/data).
 TinyStories first as a cheap check of the setup:
-    uv run modal run cs336_basics/tokenizer/train_bpe_modal.py --input-name TinyStoriesV2-GPT4-train.txt --acronym ts --vocab-size 10000
-    uv run modal run cs336_basics/tokenizer/train_bpe_modal.py --input-name owt_train.txt --acronym owt --vocab-size 32000
+    uv run modal run --detach cs336_basics/tokenizer/train_bpe_modal.py --input-name TinyStoriesV2-GPT4-train.txt --acronym ts --vocab-size 10000
+    uv run modal run --detach cs336_basics/tokenizer/train_bpe_modal.py --input-name owt_train.txt --acronym owt --vocab-size 32000
 
 Download results:
     uv run modal volume get cs336-data /assignment1/data/ts_bpe_vocab_10000.json data/
@@ -22,13 +23,24 @@ Download results:
     uv run modal volume get cs336-data /assignment1/data/owt_bpe_vocab_32000.json data/
     uv run modal volume get cs336-data /assignment1/data/owt_bpe_merges_32000.txt data/
 
-`TinyStoriesV2-GPT4-train.txt` took 59 seconds locally and 104 seconds on Modal.
-`owt_train.txt` took __ seconds on Modal.
+`TinyStoriesV2-GPT4-train.txt`
+Environment  | Implementation                                | Runtime
+-------------|-----------------------------------------------|--------
+Local        | heap (merge_to_vocab_size)                    | 43s
+Local        | linear scan (merge_to_vocab_size_linear_scan) | 59s
+Modal        | heap (merge_to_vocab_size)                    | 59s
+Modal        | linear scan (merge_to_vocab_size_linear_scan) | 104s
+
+Hardware Details:
+- Local: Apple M4 Pro (14-core CPU, 24GB RAM)
+- Modal: 32-core CPU, 128GB RAM
+
+`owt_train.txt` took 1008 seconds on Modal (32 core, 128 GB RAM) with the heap implementation in merge_to_vocab_size(...).
 """
 
 import modal
 
-app = modal.App("cs336-bpe")
+app = modal.App("cs336-train-bpe")
 
 volume = modal.Volume.from_name("cs336-data", create_if_missing=True)
 VOLUME_PATH = "/vol"

@@ -1,3 +1,4 @@
+import heapq
 import json
 import os
 import time
@@ -91,7 +92,7 @@ def merge(
 
     return token_counts
 
-def merge_to_vocab_size(
+def merge_to_vocab_size_linear_scan(
     token_counts: dict[tuple[bytes, ...], int],
     vocab: dict[int, bytes],
     vocab_size: int
@@ -112,6 +113,83 @@ def merge_to_vocab_size(
         token_counts = merge(token_counts, merge_candidate, pair_counts, pair_tokens)
         vocab[len(vocab)] = b"".join(merge_candidate)
         merges.append(merge_candidate)
+    return vocab, merges
+
+def merge_to_vocab_size(token_counts, vocab, vocab_size):
+    # Used Claude for this to compare speedups.
+    # Reversed sort key per token id: complement each byte and add a terminator
+    # larger than any byte. Ascending order on these keys equals descending
+    # lexicographic order on the original bytes (including the prefix case).
+    def rev_key(b: bytes) -> tuple:
+        return tuple(255 - x for x in b) + (256,)
+
+    rev = {i: rev_key(b) for i, b in vocab.items()}
+
+    byte_to_id = {b: i for i, b in vocab.items()}
+    words = [[byte_to_id[b] for b in tok] for tok in token_counts]
+    freqs = list(token_counts.values())
+
+    pair_counts = defaultdict(int)
+    pair_words = defaultdict(set)          # pair -> indices of words containing it
+    for idx, (w, f) in enumerate(zip(words, freqs)):
+        for p in zip(w, w[1:]):
+            pair_counts[p] += f
+            pair_words[p].add(idx)
+
+    # heap entry: (-count, reversed bytes of left, reversed bytes of right, left id, right id)
+    heap = [(-c, rev[a], rev[b], a, b) for (a, b), c in pair_counts.items()]
+    heapq.heapify(heap)
+
+    merges = []
+    while len(vocab) < vocab_size and heap:
+        negc, _, _, a, b = heapq.heappop(heap)
+        pair = (a, b)
+        if pair_counts.get(pair, 0) != -negc:      # stale entry, skip
+            continue
+
+        new_id = len(vocab)
+        vocab[new_id] = vocab[a] + vocab[b]
+        rev[new_id] = rev_key(vocab[new_id])
+        merges.append((vocab[a], vocab[b]))
+
+        touched = set()
+        for idx in list(pair_words[pair]):
+            w, f = words[idx], freqs[idx]
+
+            # remove old pair contributions
+            for p in zip(w, w[1:]):
+                pair_counts[p] -= f
+                pair_words[p].discard(idx)
+                touched.add(p)
+
+            # apply the merge
+            new_w, i = [], 0
+            while i < len(w):
+                if i + 1 < len(w) and w[i] == a and w[i + 1] == b:
+                    new_w.append(new_id)
+                    i += 2
+                else:
+                    new_w.append(w[i])
+                    i += 1
+            words[idx] = new_w
+
+            # add new pair contributions
+            for p in zip(new_w, new_w[1:]):
+                pair_counts[p] += f
+                pair_words[p].add(idx)
+                touched.add(p)
+
+        # push fresh entries only for pairs whose counts changed
+        for p in touched:
+            c = pair_counts[p]
+            if c > 0:
+                heapq.heappush(heap, (-c, rev[p[0]], rev[p[1]], p[0], p[1]))
+            else:
+                del pair_counts[p]
+                pair_words.pop(p, None)
+        pair_counts.pop(pair, None)
+        pair_words.pop(pair, None)
+
     return vocab, merges
 
 def train_bpe(
@@ -209,7 +287,7 @@ def train_and_save_bpe(
     longest_str = longest_bytes.decode("utf-8", errors="replace")
 
     print(f"{input_path} Duration: {t1 - t0} seconds")
-    print(f"{input_path} Longest Token | Decoded: {longest_str!r} | ID: {longest_id} | Bytes: {len(longest_bytes)}\n")
+    print(f"{input_path} Longest Token | Decoded: {longest_str!r} | ID: {longest_id} | Bytes: {len(longest_bytes)}")
 
 
 if __name__ == "__main__":
