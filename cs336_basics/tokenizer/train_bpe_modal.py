@@ -33,9 +33,9 @@ Modal        | linear scan (merge_to_vocab_size_linear_scan) | 104s
 
 Hardware Details:
 - Local: Apple M4 Pro (14-core CPU, 24GB RAM)
-- Modal: 32-core CPU, 128GB RAM
+- Modal: 32-core CPU, 64GB RAM
 
-`owt_train.txt` took 1008 seconds on Modal (32 core, 128 GB RAM) with the heap implementation in merge_to_vocab_size(...).
+`owt_train.txt` took 1008 seconds on Modal (32 core, 64GB RAM) with the heap implementation in merge_to_vocab_size(...).
 """
 
 import modal
@@ -55,7 +55,7 @@ image = (
 )
 
 CPUS = 32
-MEMORY_GB = 128
+MEMORY_GB = 64
 
 
 @app.function(

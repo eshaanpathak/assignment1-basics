@@ -286,7 +286,10 @@ def train_and_save_bpe(
     longest_id, longest_bytes = max(vocab.items(), key=lambda x: len(x[1]))
     longest_str = longest_bytes.decode("utf-8", errors="replace")
 
-    print(f"{input_path} Duration: {t1 - t0} seconds")
+    t2 = time.perf_counter()
+
+    print(f"{input_path} Train Duration: {t1 - t0} seconds")
+    print(f"{input_path} Total Duration: {t2 - t0} seconds")
     print(f"{input_path} Longest Token | Decoded: {longest_str!r} | ID: {longest_id} | Bytes: {len(longest_bytes)}")
 
 
