@@ -29,20 +29,29 @@ def save_checkpoint(
     optimizer: torch.optim.Optimizer,
     iteration: int,
     out: str | os.PathLike | BinaryIO | IO[bytes],
+    extra: dict | None = None,
 ):
     checkpoint_dict = {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
-        "iteration": iteration
+        "iteration": iteration,
+        "extra": extra or {},
     }
     torch.save(checkpoint_dict, out)
+
+def load_checkpoint_with_extra(
+    src: str | os.PathLike | BinaryIO | IO[bytes],
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+) -> tuple[int, dict]:
+    checkpoint_dict = torch.load(src)
+    model.load_state_dict(checkpoint_dict["model"])
+    optimizer.load_state_dict(checkpoint_dict["optimizer"])
+    return checkpoint_dict["iteration"], checkpoint_dict.get("extra", {})
 
 def load_checkpoint(
     src: str | os.PathLike | BinaryIO | IO[bytes],
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
 ):
-    checkpoint_dict = torch.load(src)
-    model.load_state_dict(checkpoint_dict["model"])
-    optimizer.load_state_dict(checkpoint_dict["optimizer"])
-    return checkpoint_dict["iteration"]
+    return load_checkpoint_with_extra(src, model, optimizer)[0]

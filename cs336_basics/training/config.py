@@ -4,6 +4,23 @@ from types import UnionType
 from typing import Union, get_args
 
 import numpy as np
+import torch
+
+
+_TORCH_DTYPES = {
+    "float32": torch.float32, "fp32": torch.float32,
+    "float16": torch.float16, "fp16": torch.float16,
+    "bfloat16": torch.bfloat16, "bf16": torch.bfloat16,
+}
+
+
+def torch_dtype_from_string(s: str) -> torch.dtype:
+    try:
+        return _TORCH_DTYPES[s.lower()]
+    except KeyError:
+        raise ValueError(
+            f"Unsupported torch dtype string: {s!r}, expected one of {sorted(_TORCH_DTYPES)}"
+        )
 
 
 @dataclass
@@ -12,8 +29,9 @@ class DataConfig:
     valid_path: str = "data/ts_valid.bin"
     token_dtype: str = "uint16"
 
+    # raises TypeError on unknown dtype name
     def __post_init__(self):
-        np.dtype(self.token_dtype)  # raises TypeError on an unknown dtype name
+        np.dtype(self.token_dtype)
 
 
 @dataclass
@@ -41,12 +59,13 @@ class OptimConfig:
     weight_decay: float = 0.1
     beta1: float = 0.9
     beta2: float = 0.95
+    eps: float = 1e-8
     grad_clip: float = 1.0
     batch_size: int = 32
 
     def __post_init__(self):
         assert self.min_lr <= self.lr, "min_lr must not exceed lr"
-        assert self.warmup_iters < self.max_iters, "warmup_iterers"
+        assert self.warmup_iters < self.max_iters, "warmup_iters"
 
 
 @dataclass
@@ -57,11 +76,26 @@ class TrainConfig:
     checkpoint_dir: str = "checkpoints"
     checkpoint_interval: int = 1000
     resume_from: str | None = None
-    run_name: str = "run"
-    wandb: bool = False
-    wandb_project: str = "cs336-a1"
+    run_name: str | None = None
     device: str = "cpu"
+    dtype: str = "float32"
     seed: int = 0
+
+    # fail at parse time on an unknown dtype name
+    def __post_init__(self):
+        torch_dtype_from_string(self.dtype)
+
+    @property
+    def torch_dtype(self) -> torch.dtype:
+        return torch_dtype_from_string(self.dtype)
+
+
+@dataclass
+class WandbConfig:
+    enabled: bool = False
+    project: str = "cs336-a1"
+    mode: str = "online"  # online | offline | disabled
+    dir: str | None = None
 
 
 @dataclass
@@ -70,10 +104,11 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     optim: OptimConfig = field(default_factory=OptimConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
+    wandb: WandbConfig = field(default_factory=WandbConfig)
 
     def __post_init__(self):
         max_id = np.iinfo(np.dtype(self.data.token_dtype)).max
-        assert self.model.vocab_size - 1 <= max_id, "token_dtyp"
+        assert self.model.vocab_size - 1 <= max_id, "token_dtype"
 
     def tokens_per_step(self) -> int:
         return self.optim.batch_size * self.model.context_length
@@ -82,7 +117,11 @@ class Config:
         return self.optim.max_iters * self.tokens_per_step()
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        """Raw fields plus derived values, for logging."""
+        return {
+            **asdict(self),
+            "derived": {"tokens_per_step": self.tokens_per_step(), "total_tokens": self.total_tokens()},
+        }
 
 
 def _base_type(t):

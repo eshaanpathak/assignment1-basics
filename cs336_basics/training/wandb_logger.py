@@ -8,29 +8,29 @@ from cs336_basics.training.config import Config
 
 class WandBLogger:
     def __init__(self, cfg: Config, run_id: str | None = None, elapsed_offset: float = 0.0):
-        self.run = self._init_run(cfg, run_id) if cfg.train.wandb else None
+        self.run = self._init_run(cfg, run_id) if cfg.wandb.enabled else None
         self.elapsed_offset = elapsed_offset  # wall-clock seconds spent in earlier runs of a resumed job
         self.start_time = time.perf_counter()  # after init, so wandb startup does not count as training time
 
     @staticmethod
     def _init_run(cfg: Config, run_id: str | None):
-        if cfg.train.wandb_dir:
-            os.makedirs(cfg.train.wandb_dir, exist_ok=True)
+        if cfg.wandb.dir:
+            os.makedirs(cfg.wandb.dir, exist_ok=True)
 
         # If online init fails, retry offline so the run is still recorded locally for `wandb sync`.
-        modes = [cfg.train.wandb_mode]
-        if cfg.train.wandb_mode != "offline":
+        modes = [cfg.wandb.mode]
+        if cfg.wandb.mode != "offline":
             modes.append("offline")
         for mode in modes:
             try:
                 return wandb.init(
-                    project=cfg.train.wandb_project,
+                    project=cfg.wandb.project,
                     name=cfg.train.run_name,
                     config=cfg.to_dict(),
                     id=run_id,
                     resume="allow" if run_id else None,
                     mode=mode,
-                    dir=cfg.train.wandb_dir,
+                    dir=cfg.wandb.dir,
                 )
             except Exception as e:
                 print(f"wandb init failed (mode={mode}): {e}")
@@ -64,6 +64,6 @@ class WandBLogger:
         if self.run is None:
             return
         try:
-            self.run.log({**metrics, "step": step, "wallclock_s": self.elapsed()}, step=step)
+            self.run.log({**metrics, "wallclock_s": self.elapsed()}, step=step)
         except Exception as e:
             print(f"wandb log failed at step {step}: {e}")

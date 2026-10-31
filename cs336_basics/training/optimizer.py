@@ -27,6 +27,10 @@ def clip_gradients(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float)
 
     return parameters
 
+def update_lr(optimizer: torch.optim.Optimizer, lr: float) -> None:
+    for group in optimizer.param_groups:
+        group["lr"] = lr
+
 
 class SGD(torch.optim.Optimizer):
     def __init__(self, params, lr=1e-3):
