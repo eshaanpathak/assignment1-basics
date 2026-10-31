@@ -6,7 +6,6 @@ from typing import Union, get_args
 import numpy as np
 import torch
 
-
 _TORCH_DTYPES = {
     "float32": torch.float32, "fp32": torch.float32,
     "float16": torch.float16, "fp16": torch.float16,
@@ -55,7 +54,8 @@ class OptimConfig:
     lr: float = 3e-4
     min_lr: float = 3e-5
     warmup_iters: int = 200
-    max_iters: int = 40_000  # also the end of the cosine schedule
+    cosine_cycle_iters: int = 40_000
+    max_iters: int = 40_000
     weight_decay: float = 0.1
     beta1: float = 0.9
     beta2: float = 0.95
@@ -65,13 +65,13 @@ class OptimConfig:
 
     def __post_init__(self):
         assert self.min_lr <= self.lr, "min_lr must not exceed lr"
-        assert self.warmup_iters < self.max_iters, "warmup_iters"
+        assert self.warmup_iters < self.cosine_cycle_iters, "warmup_iters"
 
 
 @dataclass
 class TrainConfig:
     eval_interval: int = 500
-    eval_iters: int = 20
+    eval_batch_size: int = 32
     log_interval: int = 10
     checkpoint_dir: str = "checkpoints"
     checkpoint_interval: int = 1000

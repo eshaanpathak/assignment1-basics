@@ -6,8 +6,8 @@ import torch
 
 from cs336_basics.model.transformer import Transformer
 from cs336_basics.training.config import parse_config
-from cs336_basics.training.optimizer import AdamW
-from cs336_basics.training.utils import load_checkpoint_with_extra, save_checkpoint
+from cs336_basics.training.optimizer import AdamW, clip_gradients, cosine_lr_schedule, update_lr
+from cs336_basics.training.utils import cross_entropy, get_batch, load_checkpoint_with_extra, save_checkpoint
 from cs336_basics.training.wandb_logger import WandBLogger
 
 
@@ -52,6 +52,21 @@ def main():
 
     train_data = np.memmap(cfg.data.train_path, dtype=cfg.data.token_dtype, mode="r")
     valid_data = np.memmap(cfg.data.valid_path, dtype=cfg.data.token_dtype, mode="r")
+
+    for t in range(iteration, cfg.train.max_iters):
+        batch_data, target_data = get_batch(train_data, cfg.optim.batch_size, cfg.model.context_length, cfg.train.device)
+        batch_preds = model(batch_data)
+        loss = cross_entropy(batch_preds, target_data)
+
+        cosine_lr = cosine_lr_schedule(t, cfg.optim.lr, cfg.optim.min_lr, cfg.optim.warmup_iters, cfg.optim.max_iters)
+        update_lr(optimizer, cosine_lr)
+        optimizer.zero_grad()
+
+        loss.backward()
+        loss = clip_gradients(model.parameters(), cfg.optim.grad_clip)
+        optimizer.step()
+
+        
 
 
 if __name__ == "__main__":
