@@ -13,12 +13,6 @@ from cs336_basics.training.wandb_logger import WandBLogger
 
 def main():
     cfg = parse_config()
-    # np.memmap on train and valid data
-    # instantiate transformer
-    # instantiate optimizer
-    # instantiate wandblogger
-    # train loop with optimizer.zero_grad(), model.forward(), loss.backward(), clip_gradient(), optimizer.step(), update_lr()
-    # load and save checkpoints
     torch.manual_seed(cfg.train.seed)
     np.random.seed(cfg.train.seed)
 
@@ -48,25 +42,91 @@ def main():
     else:
         iteration, extra_dict = 0, {}
 
-    wandb_logger = WandBLogger(cfg, extra_dict.get("run_id"), extra_dict.get("elapsed_offset"))
+    wandb_logger = WandBLogger(cfg, extra_dict.get("run_id"), extra_dict.get("elapsed_offset", 0))
 
     train_data = np.memmap(cfg.data.train_path, dtype=cfg.data.token_dtype, mode="r")
     valid_data = np.memmap(cfg.data.valid_path, dtype=cfg.data.token_dtype, mode="r")
 
-    for t in range(iteration, cfg.train.max_iters):
-        batch_data, target_data = get_batch(train_data, cfg.optim.batch_size, cfg.model.context_length, cfg.train.device)
+    valid_loss = extra_dict.get("valid_loss", float("inf"))
+    best_valid_loss = extra_dict.get("best_valid_loss", float("inf"))
+
+    def make_extra() -> dict:
+        return {
+            "run_id": wandb_logger.run_id,
+            "elapsed_offset": wandb_logger.elapsed(),
+            "valid_loss": valid_loss,
+            "best_valid_loss": best_valid_loss,
+        }
+
+    t = iteration  # stays defined (and equal to the resumed step) if the loop below never runs
+    for t in range(iteration + 1, cfg.optim.max_iters + 1):
+        batch_data, target_data = get_batch(
+            train_data,
+            cfg.optim.batch_size,
+            cfg.model.context_length,
+            cfg.train.device
+        )
         batch_preds = model(batch_data)
         loss = cross_entropy(batch_preds, target_data)
 
-        cosine_lr = cosine_lr_schedule(t, cfg.optim.lr, cfg.optim.min_lr, cfg.optim.warmup_iters, cfg.optim.max_iters)
+        cosine_lr = cosine_lr_schedule(
+            t,
+            cfg.optim.lr,
+            cfg.optim.min_lr,
+            cfg.optim.warmup_iters,
+            cfg.optim.cosine_cycle_iters
+        )
         update_lr(optimizer, cosine_lr)
         optimizer.zero_grad()
 
         loss.backward()
-        loss = clip_gradients(model.parameters(), cfg.optim.grad_clip)
+        parameters, total_norm = clip_gradients(model.parameters(), cfg.optim.grad_clip)
         optimizer.step()
 
-        
+        if t % cfg.train.log_interval == 0:
+            wandb_logger.log_train(t, loss.item(), cosine_lr, total_norm.item())
+
+        if t % cfg.train.eval_interval == 0:
+            with torch.inference_mode():
+                batch_data, target_data = get_batch(
+                    valid_data,
+                    cfg.optim.eval_batch_size,
+                    cfg.model.context_length,
+                    cfg.train.device
+                )
+                batch_preds = model(batch_data)
+                valid_loss = cross_entropy(batch_preds, target_data).item()
+                wandb_logger.log_val(t, valid_loss)
+
+            if valid_loss < best_valid_loss:
+                best_valid_loss = valid_loss
+                save_checkpoint(
+                    model,
+                    optimizer,
+                    t,
+                    os.path.join(cfg.train.checkpoint_dir, "checkpoint_best.pt"),
+                    extra=make_extra()
+                )
+
+        if t % cfg.train.checkpoint_interval == 0:
+            save_checkpoint(
+                model,
+                optimizer,
+                t,
+                os.path.join(cfg.train.checkpoint_dir, f"checkpoint_{t}.pt"),
+                extra=make_extra()
+            )
+
+    if t > iteration and t % cfg.train.checkpoint_interval != 0:
+        save_checkpoint(
+            model,
+            optimizer,
+            t,
+            os.path.join(cfg.train.checkpoint_dir, f"checkpoint_{t}.pt"),
+            extra=make_extra()
+        )
+
+    wandb_logger.finish()
 
 
 if __name__ == "__main__":

@@ -20,12 +20,12 @@ def clip_gradients(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float)
             total_norm += torch.linalg.vector_norm(p.grad.data) ** 2
     total_norm = total_norm ** 0.5
     
-    if total_norm > max_l2_norm:
+    if total_norm.item() > max_l2_norm:
         for p in parameters:
             if p.grad is not None:
                 p.grad.data *= max_l2_norm / (total_norm + 10e-6)
 
-    return parameters
+    return parameters, total_norm
 
 def update_lr(optimizer: torch.optim.Optimizer, lr: float) -> None:
     for group in optimizer.param_groups:
