@@ -21,14 +21,14 @@ prepended, so anything you pass overrides them:
     --train.device cuda
     --train.run_name <run-name>
 
-    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_baseline --train-args "--wandb.enabled"
-    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_lr1e3 --train-args "--optim.lr 1e-3 --optim.min_lr 1e-4 --wandb.enabled"
+    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_default
+    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_lr1e-3 --train-args "--optim.lr 1e-3 --optim.min_lr 1e-4"
 
 Resume (checkpoint path is on the volume):
-    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_baseline --train-args "--train.resume_from /vol/assignment1/checkpoints/ts_baseline/checkpoint_5000.pt"
+    uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_default --train-args "--train.resume_from /vol/assignment1/checkpoints/ts_default/checkpoint_5000.pt"
 
 Download checkpoints:
-    uv run modal volume get cs336-data /assignment1/checkpoints/ts_baseline checkpoints/
+    uv run modal volume get cs336-data /assignment1/checkpoints/ts_default checkpoints/
 """
 
 import shlex

@@ -49,7 +49,7 @@ def generate(
         if end_of_text_id == generated_token_id.item():
             break
 
-        all_token_ids = torch.cat((all_token_ids, generated_token_id.unsqueeze(-1)))
+        all_token_ids = torch.cat((all_token_ids, generated_token_id))
     
     if model_training:
         model.train()

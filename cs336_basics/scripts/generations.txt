@@ -1,0 +1,28 @@
+loaded /vol/assignment1/checkpoints/ts_lr_sweep_lr0.001/checkpoint_best.pt (iteration 36000, extra={'run_id': 'ae3ph5ca', 'elapsed_offset': 1323.2115608909999, 
+'valid_loss': 1.3171119689941406, 'best_valid_loss': 1.3171119689941406})
+
+--- sample 1 (175 new tokens) ---
+Once upon a time, there was a clumsy little girl named Sally. She loved to play with her toy lime, Mr. landing in her backyard. Mr.saw and down the yard would swing high 
+above her house. Sally loved playing with Mr. rewarding, but sometimes she would get tired and sad.
+One day, Sally went to play on her porch. She forgot her toy lime at home. Sally began to hate her toy lime so much. She missed that when she played with it before it fell
+on the ground. She was so clumsy that she tripped and fell. Mr. strum went over her every moment and started to cry.
+Sally was very sad and cried too. She wished she had not played with Mr. warmed herself. The day ended with Sally feeling very alone and very sad. In the end, Sally never 
+went home and Mr. longer felt strength and sad.
+
+
+--- sample 2 (155 new tokens) ---
+Once upon a time, there was a dog named Spot. Spot was very frustrated. He could not hear anything. He felt sad and wanted to find a quiet place to sleep. He thought and 
+thought, and then he had an idea!
+Spot decided to ask his friend, Cat, for help. Cat Tom was stillow- disgusting. They went to find a quiet place for the quiet. Spot saw a big cat. The cat said, "You can 
+sleep here, but you need to find a quiet place."
+Spot and Cat looked and looked for a quiet place. They found a big tree with lots of shade. Under the tree, they found a warm, happy bed. Spot learned that it is important
+to listen to your friends. Spot did not like the quiet pain.
+
+
+--- sample 3 (198 new tokens) ---
+Once upon a time, in a small house, there lived a helpful cat named Fluffy. Fluffy loved to help others. She was always kind and always shared her toys with others. One 
+day, Fluffy saw her friend, the dog, playing with a plate of food. Her dog accidentally broke the plate. Fluffy gave her a big surprise.
+"What are you doing?" Fluffy asked, happy to make her friend happy. Just then, the dog's owner came to visit and asked, "What's wrong, Fluffy?" Fluffy replied, her 
+familyHop and put the plate down. The owner, Spot, came in and saw the broken plate. Spot felt sad for Fluffy.
+ copied Fluffy's work and told her to be careful next time. Fluffy learned that taking care of the food was important and it had to beOops tomorrow. She learned that being
+helpful made her feel good too. From that day on, Fluffy always made sure it was okay to forgive and use nuts for the right time.
