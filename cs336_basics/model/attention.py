@@ -4,9 +4,11 @@ from torch import nn
 from cs336_basics.model.layers import Linear, RotaryPositionEmbedding
 
 
-def softmax(x: torch.Tensor, dim_idx: int) -> torch.Tensor:
+def softmax(x: torch.Tensor, dim_idx: int, temperature: float = 1.0) -> torch.Tensor:
+    if temperature <= 0.0:
+        raise ValueError(f"temperature of {temperature} must be greater than 0")
     max_values = torch.max(x, dim_idx, keepdim=True).values
-    exp_x = torch.exp(x - max_values)
+    exp_x = torch.exp((x - max_values) / temperature)
     softmax_x = exp_x / torch.sum(exp_x, dim=dim_idx, keepdim=True)
     return softmax_x
 

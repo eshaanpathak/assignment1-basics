@@ -60,6 +60,7 @@ def main():
 
     t = iteration  # stays defined (and equal to the resumed step) if the loop below never runs
     for t in range(iteration + 1, cfg.optim.max_iters + 1):
+        model.train()
         batch_data, target_data = get_batch(
             train_data,
             cfg.optim.batch_size,
@@ -87,6 +88,7 @@ def main():
             wandb_logger.log_train(t, loss.item(), cosine_lr, total_norm.item())
 
         if t % cfg.train.eval_interval == 0:
+            model.eval()
             with torch.inference_mode():
                 batch_data, target_data = get_batch(
                     valid_data,
