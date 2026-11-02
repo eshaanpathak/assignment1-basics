@@ -3,10 +3,10 @@ Modal launcher for a learning-rate sweep. Infra only: it fans out one train_moda
 rate, all in parallel (one GPU container each). The training logic lives in train.py.
 
 Fill in LEARNING_RATES below, then run:
-    uv run modal run --detach cs336_basics/training/learning_rate_sweep.py --prefix ts_lr
-    uv run modal run --detach cs336_basics/training/learning_rate_sweep.py --prefix ts_lr --extra-args "--optim.max_iters 5000 --optim.cosine_cycle_iters 5000"
+    uv run modal run --detach cs336_basics/scripts/learning_rate_sweep.py --prefix ts_lr_sweep
+    uv run modal run --detach cs336_basics/scripts/learning_rate_sweep.py --prefix ts_lr_sweep --extra-args "--optim.max_iters 5000 --optim.cosine_cycle_iters 5000"
 
-Each run is named <prefix>_lr<value> (e.g. ts_lr_lr0.0003), logs to wandb under that name, and writes checkpoints to
+Each run is named <prefix>_lr<value> (e.g. ts_lr_sweep_lr0.0003), logs to wandb under that name, and writes checkpoints to
 /vol/assignment1/checkpoints/<run-name>/. Compare them in the wandb UI on val/loss.
 
 min_lr is set to lr * MIN_LR_RATIO for every run, so the schedule shape stays the same across the sweep
@@ -15,8 +15,7 @@ min_lr is set to lr * MIN_LR_RATIO for every run, so the schedule shape stays th
 
 from cs336_basics.training.train_modal import app, train_remote
 
-# Fill these in.
-LEARNING_RATES: list[float] = []
+LEARNING_RATES: list[float] = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3]
 
 # train.py's default is lr=3e-4, min_lr=3e-5, i.e. a ratio of 0.1.
 MIN_LR_RATIO = 0.1
