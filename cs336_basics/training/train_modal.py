@@ -23,6 +23,7 @@ prepended, so anything you pass overrides them:
 
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_default
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_lr1e-3 --train-args "--optim.lr 1e-3 --optim.min_lr 1e-4"
+    uv run modal run --detach cs336_basics/training/train_modal.py --run-name owt_default --train-args "--data.train_path /vol/assignment1/data/owt_train.bin --data.valid_path /vol/assignment1/data/owt_valid.bin --model.vocab_size 32000"
 
 Resume (checkpoint path is on the volume):
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_default --train-args "--train.resume_from /vol/assignment1/checkpoints/ts_default/checkpoint_5000.pt"

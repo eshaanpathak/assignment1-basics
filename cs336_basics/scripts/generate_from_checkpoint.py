@@ -11,6 +11,13 @@ On Modal (same volume as train_modal.py; run name = the checkpoint directory, i.
     uv run modal run cs336_basics/scripts/generate_from_checkpoint.py --run-name ts_bs_sweep_bs256 --checkpoint checkpoint_5000.pt \
         --temperature 0.8 --top-p 0.9 --num-samples 3
     uv run modal run cs336_basics/scripts/generate_from_checkpoint.py --run-name ts_big --model-args "--model.d_model 768 --model.num_layers 8"
+    uv run modal run cs336_basics/scripts/generate_from_checkpoint.py \
+    --run-name owt_default \
+    --vocab-name owt_bpe_vocab_32000.json \
+    --merges-name owt_bpe_merges_32000.txt \
+    --model-args "--model.vocab_size 32000" \
+    --prompt "The president" \
+    --num-samples 3
 
     Defaults: --checkpoint checkpoint_best.pt, --vocab-name ts_bpe_vocab_10000.json, --merges-name ts_bpe_merges_10000.txt
     (files in /vol/assignment1/data, as written by train_bpe_modal.py). Use the owt_* vocab/merges for OpenWebText runs.
