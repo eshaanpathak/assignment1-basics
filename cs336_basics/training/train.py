@@ -1,5 +1,4 @@
 import os
-import time
 
 import numpy as np
 import torch
@@ -38,7 +37,7 @@ def main():
     os.makedirs(cfg.train.checkpoint_dir, exist_ok=True)
 
     if cfg.run.resume_from is not None:
-        iteration, extra_dict = load_checkpoint_with_extra(cfg.run.resume_from, model, optimizer)
+        iteration, extra_dict = load_checkpoint_with_extra(cfg.train.resume_from, model, optimizer)
     else:
         iteration, extra_dict = 0, {}
 
