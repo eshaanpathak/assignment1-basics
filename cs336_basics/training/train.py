@@ -24,7 +24,7 @@ def main():
         cfg.model.context_length,
         cfg.model.num_layers,
         device=cfg.train.device,
-        dtype=cfg.train.dtype
+        dtype=cfg.train.torch_dtype
     )
     optimizer = AdamW(
         model.parameters(),
@@ -36,7 +36,7 @@ def main():
 
     os.makedirs(cfg.train.checkpoint_dir, exist_ok=True)
 
-    if cfg.run.resume_from is not None:
+    if cfg.train.resume_from is not None:
         iteration, extra_dict = load_checkpoint_with_extra(cfg.train.resume_from, model, optimizer)
     else:
         iteration, extra_dict = 0, {}
@@ -91,7 +91,7 @@ def main():
             with torch.inference_mode():
                 batch_data, target_data = get_batch(
                     valid_data,
-                    cfg.optim.eval_batch_size,
+                    cfg.train.eval_batch_size,
                     cfg.model.context_length,
                     cfg.train.device
                 )

@@ -92,7 +92,7 @@ class TrainConfig:
 
 @dataclass
 class WandbConfig:
-    enabled: bool = False
+    enabled: bool = True
     project: str = "cs336-a1"
     mode: str = "online"  # online | offline | disabled
     dir: str | None = None
