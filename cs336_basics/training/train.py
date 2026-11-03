@@ -24,7 +24,11 @@ def main():
         cfg.model.context_length,
         cfg.model.num_layers,
         device=cfg.train.device,
-        dtype=cfg.train.torch_dtype
+        dtype=cfg.train.torch_dtype,
+        use_rmsnorm=cfg.model.use_rmsnorm,
+        post_norm=cfg.model.post_norm,
+        use_rope=cfg.model.use_rope,
+        ffn=cfg.model.ffn,
     )
     optimizer = AdamW(
         model.parameters(),

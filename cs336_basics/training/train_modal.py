@@ -25,6 +25,14 @@ prepended, so anything you pass overrides them:
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_lr1e-3 --train-args "--optim.lr 1e-3 --optim.min_lr 1e-4"
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name owt_default --train-args "--data.train_path /vol/assignment1/data/owt_train.bin --data.valid_path /vol/assignment1/data/owt_valid.bin --model.vocab_size 32000"
 
+Run commands for ablations:
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_no_rmsnorm --train-args "--no-model.use_rmsnorm"
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_no_rmsnorm_lr1e4 --train-args "--no-model.use_rmsnorm --optim.lr 1e-4 --optim.min_lr 1e-5"
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_post_norm --train-args "--model.post_norm"
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_post_norm_lr1e4 --train-args "--model.post_norm --optim.lr 1e-4 --optim.min_lr 1e-5"
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_no_rope --train-args "--no-model.use_rope"
+uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_silu_ffn --train-args "--model.ffn silu"
+
 Resume (checkpoint path is on the volume):
     uv run modal run --detach cs336_basics/training/train_modal.py --run-name ts_default --train-args "--train.resume_from /vol/assignment1/checkpoints/ts_default/checkpoint_5000.pt"
 

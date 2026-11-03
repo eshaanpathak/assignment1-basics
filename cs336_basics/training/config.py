@@ -42,11 +42,20 @@ class ModelConfig:
     num_heads: int = 16
     d_ff: int | None = None  # derived from d_model when left as None
     rope_theta: float = 10_000.0
+    # Ablation switches; the defaults are the baseline model.
+    use_rmsnorm: bool = True  # --no-model.use_rmsnorm removes every RMSNorm layer
+    post_norm: bool = False  # --model.post_norm: norm after each residual add instead of before each sublayer
+    use_rope: bool = True  # --no-model.use_rope removes rotary position embeddings
+    ffn: str = "swiglu"  # "swiglu" | "silu" (two-matrix SiLU FFN with d_ff = 4 * d_model)
 
     def __post_init__(self):
         assert self.d_model % self.num_heads == 0, "d_model must be divisible by num_heads"
+        assert self.ffn in ("swiglu", "silu"), "ffn must be 'swiglu' or 'silu'"
         if self.d_ff is None:
-            self.d_ff = 64 * round(8 * self.d_model / 3 / 64)
+            if self.ffn == "swiglu":
+                self.d_ff = 64 * round(8 * self.d_model / 3 / 64)
+            else:
+                self.d_ff = 4 * self.d_model
 
 
 @dataclass
